@@ -117,7 +117,7 @@
     const fallbackClose = document.getElementById("fallbackClose");
 
     let iframeLoaded = false;
-    let fallbackDismissed = localStorage.getItem("fallbackDismissed") === "true";
+    let fallbackDismissed = false;
 
     iframe.addEventListener("load", () => {
       iframeLoaded = true;
@@ -131,10 +131,11 @@
 
     function dismissFallback() {
       fallbackDismissed = true;
-      localStorage.setItem("fallbackDismissed", "true");
       fallback.classList.add("dismissed");
+
       setTimeout(() => {
         fallback.classList.remove("show");
+        fallback.classList.remove("dismissed");
       }, 250);
     }
 
