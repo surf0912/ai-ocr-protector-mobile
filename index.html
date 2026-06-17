@@ -1,351 +1,1028 @@
-<!doctype html>
-<html lang="zh-Hant">
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>預言家日報・防窺工坊</title>
-
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" type="image/png" href="./favicon.png" />
-  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
-
-  <meta name="theme-color" content="#8a2d2d" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="預言家日報" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
+  <meta name="theme-color" content="#1a0a00" />
+  <title>預言家日報</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="icon" href="./favicon.png" />
   <style>
+    /* ── Design tokens ── */
     :root {
-      --paper: #EFE2C4;
-      --paper-deep: #E4D2A8;
-      --ink: #3A2A17;
-      --wine: #8a2d2d;
-      --wine-dark: #6f2424;
-      --gold: #C2A867;
-      --shadow: rgba(58, 42, 23, 0.22);
+      --parchment:  #f4e8c1;
+      --parchment2: #efe2c4;
+      --ink:        #1a0a00;
+      --ink-light:  #3d1f0d;
+      --scarlet:    #8a2d2d;
+      --scarlet-dk: #5c1a1a;
+      --gold:       #c9a84c;
+      --gold-lt:    #e8d5a3;
+      --shadow:     rgba(26,10,0,0.35);
+      --nav-h:      64px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: 'Georgia', 'Times New Roman', serif; }
+    body { background: var(--ink); color: var(--parchment); }
 
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: var(--paper);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--ink);
+    /* ── Layout ── */
+    #app { display: flex; flex-direction: column; height: 100%; }
+    #page-area { flex: 1; overflow-y: auto; background: var(--parchment); color: var(--ink); }
+
+    /* ── Nav bar ── */
+    nav {
+      display: flex; align-items: stretch;
+      background: var(--ink);
+      border-top: 2px solid var(--gold);
+      height: calc(var(--nav-h) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      position: relative; z-index: 10;
     }
-
-    body {
-      overscroll-behavior: none;
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      background: none; border: none; cursor: pointer;
+      color: var(--gold-lt); font-size: 9px; letter-spacing: 0.04em;
+      transition: color .2s, background .2s; padding: 6px 2px 0;
       -webkit-tap-highlight-color: transparent;
     }
+    .nav-btn .icon { font-size: 22px; line-height: 1; }
+    .nav-btn.active { color: var(--gold); background: rgba(201,168,76,.08); }
+    .nav-btn:active { opacity: .7; }
 
-    .frame-wrap {
-      position: fixed;
-      inset: env(safe-area-inset-top) 0 0 0;
-      width: 100%;
-      height: calc(100% - env(safe-area-inset-top));
-      background: var(--paper);
-      opacity: 0;
-      transition: opacity 0.35s ease;
+    /* ── Pages ── */
+    .page { display: none; min-height: 100%; padding: 0 0 80px; }
+    .page.active { display: block; }
+
+    /* ── Auth overlay ── */
+    #auth-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 0;
     }
-
-    .frame-wrap.ready {
-      opacity: 1;
+    .auth-box {
+      width: 100%; max-width: 380px; padding: 36px 28px;
+      background: rgba(244,232,193,0.06);
+      border: 1px solid var(--gold);
+      border-radius: 4px;
     }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: 0;
-      display: block;
-      background: var(--paper);
+    .auth-logo { text-align: center; margin-bottom: 24px; }
+    .auth-logo h1 { color: var(--gold); font-size: 24px; letter-spacing: .1em; }
+    .auth-logo p  { color: var(--gold-lt); font-size: 12px; margin-top: 4px; }
+    .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--gold); }
+    .auth-tab {
+      flex: 1; padding: 8px; text-align: center; cursor: pointer;
+      color: var(--gold-lt); font-size: 13px; border: none; background: none;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .2s;
     }
-
-    .splash {
-      position: fixed;
-      inset: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
-      background:
-        radial-gradient(circle at 50% 28%, rgba(255, 247, 220, 0.72), transparent 34%),
-        linear-gradient(135deg, #F3E6C8 0%, #E7D4A8 48%, #D9BE86 100%);
-      transition: opacity 0.4s ease, visibility 0.4s ease;
+    .auth-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 11px; color: var(--gold); margin-bottom: 4px; letter-spacing: .06em; }
+    .field input {
+      width: 100%; padding: 10px 12px; background: rgba(255,255,255,.07);
+      border: 1px solid rgba(201,168,76,.4); border-radius: 3px;
+      color: var(--parchment); font-size: 15px; outline: none;
     }
+    .field input:focus { border-color: var(--gold); }
+    .btn-primary {
+      width: 100%; padding: 12px; background: var(--scarlet);
+      border: 1px solid var(--scarlet-dk); border-radius: 3px;
+      color: var(--parchment); font-size: 15px; cursor: pointer;
+      letter-spacing: .05em; transition: opacity .2s;
+    }
+    .btn-primary:hover { opacity: .85; }
+    .auth-msg { text-align: center; margin-top: 12px; font-size: 12px; color: var(--gold-lt); min-height: 18px; }
 
-    .splash.hidden {
-      opacity: 0;
-      visibility: hidden;
+    /* ── Home page ── */
+    .greeting-hero {
+      background: linear-gradient(160deg, var(--scarlet-dk) 0%, var(--ink) 60%);
+      padding: 48px 24px 36px; text-align: center; min-height: 240px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .greeting-hero .char-emoji { font-size: 72px; line-height: 1; filter: drop-shadow(0 2px 8px var(--shadow)); }
+    .greeting-hero h2 { color: var(--gold); font-size: 20px; margin-top: 12px; }
+    .greeting-hero p { color: var(--parchment2); font-size: 14px; margin-top: 8px; max-width: 300px; line-height: 1.6; }
+    .date-banner {
+      background: var(--ink-light); color: var(--gold-lt);
+      text-align: center; padding: 8px; font-size: 11px; letter-spacing: .08em;
+    }
+    .home-section { padding: 20px 18px; }
+    .home-section h3 { font-size: 13px; color: var(--scarlet); letter-spacing: .1em; margin-bottom: 12px; border-bottom: 1px solid var(--gold-lt); padding-bottom: 4px; }
+    .novel-card-sm {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid rgba(26,10,0,.1); cursor: pointer;
+    }
+    .novel-card-sm .cover {
+      width: 44px; height: 60px; background: var(--scarlet);
+      border-radius: 2px; flex-shrink: 0; object-fit: cover;
+      display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 20px;
+    }
+    .novel-card-sm .info h4 { font-size: 14px; }
+    .novel-card-sm .info p { font-size: 11px; color: var(--ink-light); margin-top: 2px; }
+
+    /* ── Scroll (卷軸) page ── */
+    .shelf-header { padding: 20px 18px 8px; background: var(--parchment2); border-bottom: 2px solid var(--gold-lt); }
+    .shelf-header h2 { font-size: 18px; color: var(--ink); }
+    .novel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; padding: 18px; }
+    .novel-card {
+      cursor: pointer; border-radius: 4px; overflow: hidden;
+      box-shadow: 0 2px 10px var(--shadow); transition: transform .2s;
+    }
+    .novel-card:active { transform: scale(.97); }
+    .novel-card .cover-big {
+      height: 190px; background: linear-gradient(135deg, var(--scarlet-dk), var(--scarlet));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; color: var(--gold);
+    }
+    .novel-card img.cover-big { height: 190px; width: 100%; object-fit: cover; }
+    .novel-card .meta { padding: 8px 10px; background: var(--parchment2); }
+    .novel-card .meta h4 { font-size: 13px; color: var(--ink); line-height: 1.3; }
+    .novel-card .meta p { font-size: 11px; color: var(--ink-light); margin-top: 2px; }
+    .empty-shelf { text-align: center; padding: 60px 24px; color: var(--ink-light); }
+
+    /* ── Reader ── */
+    #reader-view {
+      display: none; position: fixed; inset: 0; z-index: 50;
+      background: var(--parchment); overflow-y: auto;
+      flex-direction: column;
+    }
+    #reader-view.open { display: flex; }
+    .reader-header {
+      position: sticky; top: 0; background: var(--ink); color: var(--gold);
+      padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--gold); z-index: 5;
+    }
+    .reader-header button { background: none; border: none; color: var(--gold); font-size: 22px; cursor: pointer; }
+    .reader-header h3 { flex: 1; font-size: 15px; }
+    .reader-content { padding: 24px 20px 100px; font-size: 17px; line-height: 2; color: var(--ink); user-select: none; }
+    .watermark-overlay {
+      position: fixed; inset: 0; pointer-events: none; z-index: 4;
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent 0px, transparent 80px,
+        rgba(138,45,45,0.04) 80px, rgba(138,45,45,0.04) 82px
+      );
+    }
+    .chapter-nav { display: flex; justify-content: space-between; padding: 16px 20px; border-top: 1px solid var(--gold-lt); background: var(--parchment2); }
+    .chapter-nav button { padding: 8px 16px; background: var(--scarlet); color: var(--parchment); border: none; border-radius: 3px; cursor: pointer; font-size: 13px; }
+    .chapter-nav button:disabled { opacity: .4; cursor: default; }
+    .chapter-list-panel { padding: 12px 18px; background: var(--parchment2); border-bottom: 1px solid var(--gold-lt); }
+    .chapter-list-panel details summary { cursor: pointer; font-size: 13px; color: var(--scarlet); }
+    .chapter-list-panel ol { margin: 8px 0 0 18px; font-size: 13px; }
+    .chapter-list-panel ol li { padding: 4px 0; cursor: pointer; color: var(--ink-light); }
+    .chapter-list-panel ol li:hover { color: var(--scarlet); }
+    .chapter-list-panel ol li.current { color: var(--scarlet); font-weight: bold; }
+
+    /* ── Forum page ── */
+    .forum-header { padding: 20px 18px 8px; border-bottom: 2px solid var(--gold-lt); }
+    .forum-header h2 { font-size: 18px; }
+    .forum-novel-select { padding: 12px 18px; }
+    .forum-novel-select select {
+      width: 100%; padding: 8px 10px;
+      border: 1px solid var(--gold-lt); border-radius: 3px;
+      background: var(--parchment2); color: var(--ink); font-size: 14px;
+    }
+    .comment-thread { padding: 0 18px; }
+    .comment-item { padding: 12px 0; border-bottom: 1px solid rgba(26,10,0,.08); }
+    .comment-item .c-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .comment-item .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--scarlet); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 12px; flex-shrink: 0; }
+    .comment-item .c-name { font-size: 12px; font-weight: bold; color: var(--scarlet); }
+    .comment-item .c-time { font-size: 11px; color: #888; }
+    .comment-item .c-body { font-size: 14px; line-height: 1.6; padding-left: 36px; }
+    .comment-item .c-actions { padding-left: 36px; margin-top: 4px; display: flex; gap: 12px; }
+    .comment-item .c-actions button { background: none; border: none; font-size: 11px; color: #888; cursor: pointer; padding: 2px 0; }
+    .comment-item .c-actions button:hover { color: var(--scarlet); }
+    .comment-item.reply { padding-left: 36px; }
+    .comment-box { padding: 16px 18px; border-top: 1px solid var(--gold-lt); background: var(--parchment2); position: sticky; bottom: 0; }
+    .comment-box textarea {
+      width: 100%; padding: 10px; border: 1px solid var(--gold-lt); border-radius: 3px;
+      font-size: 14px; resize: none; min-height: 60px; background: var(--parchment);
+    }
+    .comment-box .box-actions { display: flex; justify-content: flex-end; margin-top: 8px; gap: 8px; }
+    .comment-box .box-actions button { padding: 6px 16px; border-radius: 3px; font-size: 13px; cursor: pointer; border: none; }
+    .btn-cancel { background: transparent; border: 1px solid var(--gold-lt) !important; color: var(--ink-light); }
+    .btn-post { background: var(--scarlet); color: var(--parchment); }
+
+    /* ── Protect page ── */
+    .protect-header { padding: 20px 18px 8px; border-bottom: 2px solid var(--gold-lt); }
+    .protect-header h2 { font-size: 18px; }
+    .protect-body { padding: 20px 18px; }
+    .protect-drop {
+      border: 2px dashed var(--gold-lt); border-radius: 6px;
+      padding: 40px 20px; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .protect-drop:hover, .protect-drop.drag-over { border-color: var(--gold); background: rgba(201,168,76,.05); }
+    .protect-drop .drop-icon { font-size: 48px; }
+    .protect-drop p { margin-top: 10px; font-size: 14px; color: var(--ink-light); }
+    .preset-row { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+    .preset-btn {
+      padding: 7px 14px; border-radius: 20px; font-size: 12px;
+      border: 1px solid var(--gold-lt); background: transparent;
+      color: var(--ink); cursor: pointer; transition: all .2s;
+    }
+    .preset-btn.active { background: var(--scarlet); border-color: var(--scarlet); color: #fff; }
+    .protect-preview { margin-top: 16px; display: none; }
+    .protect-preview img { width: 100%; border-radius: 4px; border: 1px solid var(--gold-lt); }
+    .protect-preview .dl-btn { display: block; width: 100%; margin-top: 10px; padding: 12px; text-align: center; background: var(--scarlet); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; text-decoration: none; }
+    .progress-bar { height: 4px; background: var(--gold-lt); border-radius: 2px; overflow: hidden; margin: 12px 0; display: none; }
+    .progress-bar .fill { height: 100%; background: var(--scarlet); width: 0; transition: width .3s; }
+
+    /* ── Settings page ── */
+    .settings-header { padding: 20px 18px 8px; border-bottom: 2px solid var(--gold-lt); }
+    .settings-header h2 { font-size: 18px; }
+    .settings-body { padding: 20px 18px; }
+    .settings-section { margin-bottom: 28px; }
+    .settings-section h3 { font-size: 12px; color: var(--scarlet); letter-spacing: .1em; margin-bottom: 12px; }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(26,10,0,.07); }
+    .settings-row label { font-size: 14px; }
+    .settings-row select { padding: 6px 10px; border: 1px solid var(--gold-lt); border-radius: 3px; font-size: 13px; background: var(--parchment2); }
+    .toggle { position: relative; width: 44px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: #ccc; border-radius: 24px; cursor: pointer; transition: background .3s; }
+    .slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: transform .3s; }
+    .toggle input:checked + .slider { background: var(--scarlet); }
+    .toggle input:checked + .slider::before { transform: translateX(20px); }
+    .profile-box { text-align: center; padding: 20px 0; }
+    .profile-box .avatar-lg { width: 72px; height: 72px; border-radius: 50%; background: var(--scarlet); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 32px; margin: 0 auto 10px; }
+    .profile-box h3 { font-size: 18px; }
+    .profile-box p { font-size: 12px; color: var(--ink-light); margin-top: 2px; }
+    .btn-logout { display: block; width: 100%; padding: 12px; background: transparent; border: 1px solid var(--scarlet); color: var(--scarlet); border-radius: 3px; font-size: 14px; cursor: pointer; margin-top: 20px; }
+
+    /* ── Admin page ── */
+    .admin-header { padding: 20px 18px 8px; border-bottom: 2px solid var(--gold-lt); }
+    .admin-header h2 { font-size: 18px; }
+    .admin-tabs { display: flex; border-bottom: 1px solid var(--gold-lt); background: var(--parchment2); }
+    .admin-tab { flex: 1; padding: 10px; text-align: center; font-size: 12px; cursor: pointer; border: none; background: none; color: var(--ink-light); border-bottom: 2px solid transparent; }
+    .admin-tab.active { color: var(--scarlet); border-bottom-color: var(--scarlet); }
+    .admin-pane { display: none; padding: 18px; }
+    .admin-pane.active { display: block; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 11px; color: var(--scarlet); margin-bottom: 4px; letter-spacing: .05em; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 10px; border: 1px solid var(--gold-lt); border-radius: 3px;
+      font-size: 14px; background: var(--parchment2); color: var(--ink);
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .upload-zone { border: 2px dashed var(--gold-lt); border-radius: 4px; padding: 24px; text-align: center; cursor: pointer; }
+    .upload-zone.drag-over { border-color: var(--gold); }
+    .upload-queue { margin-top: 12px; }
+    .upload-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(26,10,0,.07); font-size: 13px; }
+    .upload-item .status { font-size: 16px; }
+    .user-list { margin-top: 0; }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(26,10,0,.07); }
+    .user-row .u-name { flex: 1; font-size: 14px; }
+    .user-row .u-role { font-size: 11px; color: var(--scarlet); }
+    .user-row .perm-btn { font-size: 12px; padding: 4px 10px; background: var(--scarlet); color: #fff; border: none; border-radius: 3px; cursor: pointer; }
+    .perm-modal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.6); align-items: flex-end; }
+    .perm-modal.open { display: flex; }
+    .perm-modal-inner { background: var(--parchment); width: 100%; padding: 20px; border-radius: 12px 12px 0 0; max-height: 70vh; overflow-y: auto; }
+    .perm-modal-inner h3 { font-size: 16px; margin-bottom: 14px; }
+    .perm-novel-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(26,10,0,.08); }
+    .perm-novel-row label { font-size: 14px; }
+    .btn-close-modal { display: block; width: 100%; margin-top: 16px; padding: 12px; background: var(--ink); color: var(--gold); border: none; border-radius: 3px; cursor: pointer; }
+
+    /* ── Loading spinner ── */
+    .spinner { display: flex; justify-content: center; padding: 40px; }
+    .spinner::after {
+      content: ''; width: 36px; height: 36px; border: 3px solid var(--gold-lt);
+      border-top-color: var(--scarlet); border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px); left: 50%;
+      transform: translateX(-50%) translateY(20px); opacity: 0;
+      background: var(--ink); color: var(--gold); padding: 10px 20px;
+      border-radius: 20px; font-size: 13px; border: 1px solid var(--gold);
+      transition: opacity .3s, transform .3s; z-index: 999; white-space: nowrap;
       pointer-events: none;
     }
-
-    .splash-card {
-      width: min(82vw, 360px);
-      padding: 30px 22px 26px;
-      border: 1px solid rgba(122, 85, 42, 0.28);
-      border-radius: 28px;
-      background: rgba(239, 226, 196, 0.72);
-      box-shadow: 0 20px 60px rgba(58, 42, 23, 0.22);
-      text-align: center;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    .app-icon {
-      width: 112px;
-      height: 112px;
-      border-radius: 26px;
-      object-fit: cover;
-      box-shadow:
-        0 14px 30px rgba(58, 42, 23, 0.26),
-        inset 0 0 0 1px rgba(255,255,255,0.24);
-      margin-bottom: 18px;
-    }
-
-    .app-title {
-      margin: 0;
-      font-size: 30px;
-      line-height: 1.14;
-      font-weight: 850;
-      letter-spacing: 0.03em;
-      color: var(--ink);
-    }
-
-    .app-title span {
-      display: block;
-    }
-
-    .app-subtitle {
-      margin: 12px 0 0;
-      font-size: 14px;
-      line-height: 1.5;
-      color: rgba(58, 42, 23, 0.72);
-    }
-
-    .loader {
-      width: 34px;
-      height: 34px;
-      margin: 22px auto 0;
-      border-radius: 50%;
-      border: 3px solid rgba(122, 45, 38, 0.18);
-      border-top-color: var(--wine);
-      animation: spin 0.9s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .fallback {
-      position: fixed;
-      left: 16px;
-      right: 16px;
-      bottom: calc(16px + env(safe-area-inset-bottom));
-      z-index: 30;
-      display: none;
-      padding: 14px 44px 14px 16px;
-      border: 1px solid rgba(122, 85, 42, 0.22);
-      border-radius: 18px;
-      background: rgba(239, 226, 196, 0.96);
-      box-shadow: 0 8px 24px rgba(0,0,0,.15);
-      color: var(--ink);
-      font-size: 14px;
-      line-height: 1.45;
-      touch-action: pan-y;
-      transition: transform 0.25s ease, opacity 0.25s ease;
-    }
-
-    .fallback.show {
-      display: block;
-    }
-
-    .fallback.dismissed {
-      transform: translateY(140%);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .fallback-title {
-      font-weight: 750;
-      margin-bottom: 4px;
-    }
-
-    .fallback a {
-      color: var(--wine-dark);
-      font-weight: 750;
-      text-decoration: none;
-    }
-
-    .fallback-actions {
-      margin-top: 8px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .fallback-action {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 32px;
-      padding: 0 12px;
-      border-radius: 999px;
-      background: rgba(138, 45, 45, 0.10);
-    }
-
-    .fallback-close {
-      position: absolute;
-      top: 8px;
-      right: 12px;
-      border: 0;
-      background: transparent;
-      color: var(--wine-dark);
-      font-size: 24px;
-      line-height: 1;
-      cursor: pointer;
-    }
-
-    @media (max-width: 430px) {
-      .splash-card {
-        width: min(84vw, 330px);
-        padding: 28px 20px 24px;
-      }
-
-      .app-icon {
-        width: 104px;
-        height: 104px;
-        border-radius: 24px;
-      }
-
-      .app-title {
-        font-size: 28px;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .frame-wrap,
-      .splash,
-      .fallback {
-        transition: none;
-      }
-
-      .loader {
-        animation: none;
-      }
-    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
-
 <body>
-  <div class="splash" id="splash" aria-live="polite">
-    <div class="splash-card">
-      <img class="app-icon" src="./apple-touch-icon.png" alt="防窺工坊 icon" />
-      <h1 class="app-title">
-        <span>預言家日報</span>
-        <span>防窺工坊</span>
-      </h1>
-      <p class="app-subtitle">正在展開卷軸，請稍候…</p>
-      <div class="loader" aria-hidden="true"></div>
+
+<!-- Auth Overlay -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <h1>🗞️ 預言家日報</h1>
+      <p>The Prophet's Daily · 私密閱讀平台</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('signin')">登入</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">註冊</button>
+    </div>
+    <div id="signin-form">
+      <div class="field"><label>電子郵件</label><input type="email" id="si-email" placeholder="your@email.com" /></div>
+      <div class="field"><label>密碼</label><input type="password" id="si-pass" placeholder="••••••••" /></div>
+      <button class="btn-primary" onclick="doSignIn()">進入魔法世界</button>
+    </div>
+    <div id="signup-form" style="display:none">
+      <div class="field"><label>用戶名稱</label><input type="text" id="su-name" placeholder="巫師暱稱" /></div>
+      <div class="field"><label>電子郵件</label><input type="email" id="su-email" placeholder="your@email.com" /></div>
+      <div class="field"><label>密碼</label><input type="password" id="su-pass" placeholder="至少 6 位" /></div>
+      <button class="btn-primary" onclick="doSignUp()">申請魔法通行證</button>
+    </div>
+    <p class="auth-msg" id="auth-msg"></p>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app" style="display:none">
+  <div id="page-area">
+    <!-- HOME -->
+    <div id="page-home" class="page active">
+      <div class="greeting-hero">
+        <div class="char-emoji" id="char-emoji">🧙‍♂️</div>
+        <h2 id="greeting-line">歡迎回來，巫師</h2>
+        <p id="greeting-quote">「當懷疑的時候，去圖書館。」</p>
+      </div>
+      <div class="date-banner" id="date-banner">載入中…</div>
+      <div class="home-section">
+        <h3>📚 繼續閱讀</h3>
+        <div id="home-novels"></div>
+      </div>
+    </div>
+
+    <!-- SCROLL 卷軸 -->
+    <div id="page-scroll" class="page">
+      <div class="shelf-header"><h2>📜 卷軸書架</h2></div>
+      <div id="novel-grid" class="novel-grid"></div>
+    </div>
+
+    <!-- FORUM 論壇 -->
+    <div id="page-forum" class="page">
+      <div class="forum-header"><h2>🦉 巫師論壇</h2></div>
+      <div class="forum-novel-select">
+        <select id="forum-novel-select" onchange="onForumNovelChange()">
+          <option value="">— 選擇要討論的作品 —</option>
+        </select>
+        <select id="forum-chapter-select" style="margin-top:8px" onchange="onForumChapterChange()">
+          <option value="">— 選擇章節 —</option>
+        </select>
+      </div>
+      <div class="comment-thread" id="comment-thread"></div>
+      <div class="comment-box" id="comment-box" style="display:none">
+        <div id="reply-indicator" style="font-size:12px;color:var(--scarlet);margin-bottom:6px;display:none"></div>
+        <textarea id="comment-input" placeholder="留下你的魔法評語…" rows="3"></textarea>
+        <div class="box-actions">
+          <button class="btn-cancel" onclick="cancelReply()">取消回覆</button>
+          <button class="btn-post" onclick="postComment()">發佈</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROTECT 防窺工坊 -->
+    <div id="page-protect" class="page">
+      <div class="protect-header"><h2>🔮 防窺工坊</h2></div>
+      <div class="protect-body">
+        <div class="protect-drop" id="protect-drop"
+          onclick="document.getElementById('protect-input').click()"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleProtectDrop(event)">
+          <div class="drop-icon">🖼️</div>
+          <p>點擊或拖曳圖片到這裡<br><small>支援 JPG / PNG</small></p>
+        </div>
+        <input type="file" id="protect-input" accept="image/*" style="display:none" onchange="handleProtectFile(event)" />
+        <div class="preset-row">
+          <button class="preset-btn active" data-preset="standard" onclick="selectPreset(this)">標準保護</button>
+          <button class="preset-btn" data-preset="maximum" onclick="selectPreset(this)">最大保護</button>
+          <button class="preset-btn" data-preset="extreme" onclick="selectPreset(this)">極限保護</button>
+        </div>
+        <div class="progress-bar" id="protect-progress"><div class="fill" id="protect-fill"></div></div>
+        <div class="protect-preview" id="protect-preview">
+          <img id="protect-result-img" src="" alt="protected" />
+          <a id="protect-dl" class="dl-btn" download="protected.png">⬇️ 下載保護圖片</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS 設定 -->
+    <div id="page-settings" class="page">
+      <div class="settings-header"><h2>⚙️ 個人設定</h2></div>
+      <div class="settings-body">
+        <div class="profile-box">
+          <div class="avatar-lg" id="settings-avatar">🧙</div>
+          <h3 id="settings-username">載入中</h3>
+          <p id="settings-email">—</p>
+          <p id="settings-role" style="font-size:11px;color:var(--scarlet);margin-top:4px"></p>
+        </div>
+        <div class="settings-section">
+          <h3>閱讀偏好</h3>
+          <div class="settings-row">
+            <label>字體大小</label>
+            <select id="font-size-select" onchange="applyFontSize(this.value)">
+              <option value="15">小</option>
+              <option value="17" selected>中</option>
+              <option value="19">大</option>
+              <option value="21">特大</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <label>夜間模式</label>
+            <label class="toggle">
+              <input type="checkbox" id="dark-toggle" onchange="toggleDark(this.checked)" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">🚪 登出魔法世界</button>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="page-admin" class="page">
+      <div class="admin-header"><h2>🏰 管理後台</h2></div>
+      <div class="admin-tabs">
+        <button class="admin-tab active" onclick="switchAdminTab('upload')">上傳</button>
+        <button class="admin-tab" onclick="switchAdminTab('novels')">作品管理</button>
+        <button class="admin-tab" onclick="switchAdminTab('users')">用戶管理</button>
+      </div>
+      <div id="admin-upload" class="admin-pane active">
+        <div class="form-group">
+          <label>所屬作品</label>
+          <select id="upload-novel-select"><option value="">— 選擇作品 —</option></select>
+        </div>
+        <div class="form-group">
+          <label>章節號（批量上傳時自動遞增）</label>
+          <input type="number" id="upload-chapter-num" min="1" placeholder="1" value="1" />
+        </div>
+        <div class="form-group">
+          <label>章節標題（選填）</label>
+          <input type="text" id="upload-chapter-title" placeholder="第一章：霍格華茲特快列車" />
+        </div>
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('chapter-img-input').click()">
+          <p>📸 點擊選擇小說截圖</p>
+          <small>可多選，系統將自動 OCR 解析文字</small>
+        </div>
+        <input type="file" id="chapter-img-input" accept="image/*" multiple style="display:none" onchange="handleChapterUpload(event)" />
+        <div class="upload-queue" id="upload-queue"></div>
+      </div>
+      <div id="admin-novels" class="admin-pane">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+          <button class="btn-primary" style="width:auto;padding:8px 16px;font-size:13px" onclick="showCreateNovelForm()">＋ 新增作品</button>
+        </div>
+        <div id="admin-novel-form" style="display:none;background:var(--parchment2);padding:14px;border-radius:4px;margin-bottom:14px">
+          <div class="form-group"><label>作品名稱</label><input type="text" id="new-novel-title" /></div>
+          <div class="form-group"><label>作者</label><input type="text" id="new-novel-author" /></div>
+          <div class="form-group"><label>簡介</label><textarea id="new-novel-desc"></textarea></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-primary" style="width:auto;padding:8px 20px;font-size:13px" onclick="createNovel()">建立</button>
+            <button onclick="document.getElementById('admin-novel-form').style.display='none'" style="padding:8px 16px;font-size:13px;cursor:pointer;border:1px solid var(--gold-lt);background:none;border-radius:3px">取消</button>
+          </div>
+        </div>
+        <div id="admin-novel-list"></div>
+      </div>
+      <div id="admin-users" class="admin-pane">
+        <div class="user-list" id="user-list"></div>
+      </div>
     </div>
   </div>
 
-  <div class="frame-wrap" id="frameWrap">
-    <iframe
-      id="appFrame"
-      src="https://ai-ocr-protector.streamlit.app/?embed=true"
-      title="預言家日報・防窺工坊"
-      allow="clipboard-read; clipboard-write"
-    ></iframe>
+  <nav>
+    <button class="nav-btn active" onclick="showPage('home',this)"><span class="icon">🏠</span>首頁</button>
+    <button class="nav-btn" onclick="showPage('scroll',this)"><span class="icon">📜</span>卷軸</button>
+    <button class="nav-btn" onclick="showPage('forum',this)"><span class="icon">🦉</span>論壇</button>
+    <button class="nav-btn" onclick="showPage('protect',this)"><span class="icon">🔮</span>防窺</button>
+    <button class="nav-btn" onclick="showPage('settings',this)"><span class="icon">⚙️</span>設定</button>
+    <button class="nav-btn" id="admin-nav-btn" style="display:none" onclick="showPage('admin',this)"><span class="icon">🏰</span>後台</button>
+  </nav>
+</div>
+
+<!-- Reader overlay -->
+<div id="reader-view">
+  <div class="reader-header">
+    <button onclick="closeReader()">✕</button>
+    <h3 id="reader-title">—</h3>
   </div>
-
-  <div class="fallback" id="fallback">
-    <button class="fallback-close" id="fallbackClose" aria-label="關閉提示">×</button>
-    <div class="fallback-title">卷軸暫時沒有展開</div>
-    <div>如果畫面一直沒有載入，可以直接開啟原網站。</div>
-    <div class="fallback-actions">
-      <a class="fallback-action" href="https://ai-ocr-protector.streamlit.app/" target="_blank" rel="noopener">直接開啟防窺工坊</a>
-      <a class="fallback-action" href="./">重新載入</a>
-    </div>
+  <div class="chapter-list-panel">
+    <details>
+      <summary>章節目錄</summary>
+      <ol id="reader-toc"></ol>
+    </details>
   </div>
+  <div class="watermark-overlay"></div>
+  <div class="reader-content" id="reader-content"></div>
+  <div class="chapter-nav">
+    <button id="prev-ch-btn" onclick="navigateChapter(-1)" disabled>← 上一章</button>
+    <span id="reader-ch-label" style="font-size:12px;color:var(--ink-light);align-self:center">—</span>
+    <button id="next-ch-btn" onclick="navigateChapter(1)">下一章 →</button>
+  </div>
+</div>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js').catch(() => {});
-      });
-    }
+<!-- Permission modal -->
+<div class="perm-modal" id="perm-modal">
+  <div class="perm-modal-inner">
+    <h3>📚 授權管理 — <span id="perm-user-name"></span></h3>
+    <div id="perm-novel-list"></div>
+    <button class="btn-close-modal" onclick="closePerm()">完成</button>
+  </div>
+</div>
 
-    const iframe = document.getElementById("appFrame");
-    const frameWrap = document.getElementById("frameWrap");
-    const splash = document.getElementById("splash");
-    const fallback = document.getElementById("fallback");
-    const fallbackClose = document.getElementById("fallbackClose");
+<div id="toast"></div>
 
-    let iframeLoaded = false;
-    let fallbackDismissed = false;
+<script>
+// ── Config (update after deploy) ────────────────────────────
+const API = 'https://YOUR_RENDER_APP.onrender.com';
 
-    function hideSplash() {
-      frameWrap.classList.add("ready");
-      splash.classList.add("hidden");
-    }
+// ── State ────────────────────────────────────────────────────
+let token = localStorage.getItem('pd_token') || null;
+let currentUser = null;
+let novels = [];
+let currentNovelId = null;
+let currentChapters = [];
+let currentChapterIdx = 0;
+let replyToId = null;
+let currentForumChapterId = null;
+let protectPreset = 'standard';
 
-    iframe.addEventListener("load", () => {
-      iframeLoaded = true;
-      setTimeout(hideSplash, 450);
+// ── API helper ───────────────────────────────────────────────
+async function api(path, opts = {}) {
+  const headers = { ...(opts.headers || {}) };
+  if (!(opts.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API + path, { ...opts, headers });
+  if (res.status === 401) { doLogout(); return null; }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.detail || 'Request failed');
+  }
+  return res.json();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('zh-TW') + ' ' + d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+}
+
+function initials(name) { return name ? name[0].toUpperCase() : '?'; }
+
+// ── Auth ─────────────────────────────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.auth-tab:nth-child(${tab === 'signin' ? 1 : 2})`).classList.add('active');
+  document.getElementById('signin-form').style.display = tab === 'signin' ? '' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? '' : 'none';
+  document.getElementById('auth-msg').textContent = '';
+}
+
+async function doSignIn() {
+  const msg = document.getElementById('auth-msg');
+  msg.textContent = '驗證中…';
+  try {
+    const res = await api('/auth/signin', {
+      method: 'POST',
+      body: JSON.stringify({ email: document.getElementById('si-email').value.trim(), password: document.getElementById('si-pass').value }),
     });
+    if (!res) return;
+    token = res.access_token;
+    localStorage.setItem('pd_token', token);
+    await initApp();
+  } catch (e) { msg.textContent = '⚠️ ' + e.message; }
+}
 
-    function showFallback() {
-      if (!iframeLoaded && !fallbackDismissed) {
-        fallback.classList.add("show");
-      }
-    }
-
-    function dismissFallback() {
-      fallbackDismissed = true;
-      fallback.classList.add("dismissed");
-
-      setTimeout(() => {
-        fallback.classList.remove("show");
-        fallback.classList.remove("dismissed");
-      }, 250);
-    }
-
-    fallbackClose.addEventListener("click", dismissFallback);
-
-    let touchStartY = null;
-
-    fallback.addEventListener("touchstart", (event) => {
-      touchStartY = event.touches[0].clientY;
+async function doSignUp() {
+  const msg = document.getElementById('auth-msg');
+  const name = document.getElementById('su-name').value.trim();
+  if (!name) { msg.textContent = '請輸入用戶名稱'; return; }
+  msg.textContent = '申請中…';
+  try {
+    await api('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email: document.getElementById('su-email').value.trim(), password: document.getElementById('su-pass').value, username: name }),
     });
+    msg.textContent = '✉️ 請前往郵箱確認 Email 後登入';
+  } catch (e) { msg.textContent = '⚠️ ' + e.message; }
+}
 
-    fallback.addEventListener("touchend", (event) => {
-      if (touchStartY === null) return;
+function doLogout() {
+  token = null; currentUser = null;
+  localStorage.removeItem('pd_token');
+  document.getElementById('auth-overlay').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
 
-      const touchEndY = event.changedTouches[0].clientY;
-      const deltaY = touchEndY - touchStartY;
+async function initApp() {
+  try { currentUser = await api('/auth/me'); } catch { doLogout(); return; }
+  if (!currentUser) return;
+  document.getElementById('auth-overlay').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  if (currentUser.role === 'admin') document.getElementById('admin-nav-btn').style.display = '';
+  renderSettings();
+  renderGreeting();
+  loadNovels();
+}
 
-      if (deltaY > 40) {
-        dismissFallback();
-      }
+// ── Navigation ───────────────────────────────────────────────
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'forum') populateForumSelects();
+  if (id === 'admin') { loadAdminNovelsForUpload(); }
+}
 
-      touchStartY = null;
-    });
+// ── Home ─────────────────────────────────────────────────────
+const CHARS = [
+  { emoji: '⚡', quotes: ['「當懷疑的時候，去圖書館。」', '「勇敢不是不恐懼，而是儘管恐懼仍前行。」'] },
+  { emoji: '🪄', quotes: ['「這在書裡有寫！」', '「讀書是世界上最強大的魔法。」'] },
+  { emoji: '🦊', quotes: ['「棋局告訴我，有時必須犧牲重要的東西。」', '「朋友就是另一個你自己。」'] },
+  { emoji: '🌱', quotes: ['「勇氣在於你知道自己會輸，卻仍然開始。」', '「每個人都有自己的魔法。」'] },
+];
 
-    setTimeout(showFallback, 7000);
+function renderGreeting() {
+  const h = new Date().getHours();
+  const period = h < 5 ? '深夜好' : h < 12 ? '早安' : h < 18 ? '午安' : '晚安';
+  const char = CHARS[Math.floor(Math.random() * CHARS.length)];
+  document.getElementById('char-emoji').textContent = char.emoji;
+  document.getElementById('greeting-line').textContent = `${period}，${currentUser.username || '巫師'} ✨`;
+  document.getElementById('greeting-quote').textContent = char.quotes[Math.floor(Math.random() * char.quotes.length)];
+  const now = new Date();
+  document.getElementById('date-banner').textContent =
+    `📰 ${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日 · 巫師界頭條`;
+}
 
-    setTimeout(() => {
-      if (!iframeLoaded) {
-        splash.querySelector(".app-subtitle").textContent = "載入時間較長，仍在嘗試展開卷軸…";
-      }
-    }, 4500);
-  </script>
+// ── Novels ───────────────────────────────────────────────────
+async function loadNovels() {
+  try { novels = await api('/novels/') || []; } catch { novels = []; }
+  renderShelf();
+  renderHomeNovels();
+}
+
+function renderShelf() {
+  const grid = document.getElementById('novel-grid');
+  if (!novels.length) {
+    grid.innerHTML = '<div class="empty-shelf">📭 目前沒有授權的作品<br><small>請聯絡管理員取得閱讀權限</small></div>';
+    return;
+  }
+  grid.innerHTML = novels.map(n => `
+    <div class="novel-card" onclick="openNovel('${n.id}')">
+      ${n.cover_url ? `<img src="${n.cover_url}" alt="" class="cover-big" />` : `<div class="cover-big">📖</div>`}
+      <div class="meta"><h4>${n.title}</h4><p>${n.author || '佚名'}</p></div>
+    </div>`).join('');
+}
+
+function renderHomeNovels() {
+  const el = document.getElementById('home-novels');
+  if (!novels.length) { el.innerHTML = '<p style="font-size:13px;color:#888">尚無已授權作品</p>'; return; }
+  el.innerHTML = novels.slice(0, 3).map(n => `
+    <div class="novel-card-sm" onclick="openNovel('${n.id}')">
+      <div class="cover">📖</div>
+      <div class="info"><h4>${n.title}</h4><p>${n.author || '佚名'}</p></div>
+    </div>`).join('');
+}
+
+// ── Reader ───────────────────────────────────────────────────
+async function openNovel(novelId) {
+  currentNovelId = novelId;
+  try { currentChapters = await api(`/chapters/novel/${novelId}`) || []; }
+  catch { toast('無法載入章節'); return; }
+  if (!currentChapters.length) { toast('此作品尚無章節'); return; }
+  currentChapterIdx = 0;
+  renderToc();
+  loadChapter(0);
+  document.getElementById('reader-view').classList.add('open');
+}
+
+function renderToc() {
+  document.getElementById('reader-toc').innerHTML = currentChapters.map((c, i) =>
+    `<li class="${i === currentChapterIdx ? 'current' : ''}" onclick="loadChapter(${i});document.querySelector('#reader-view details').removeAttribute('open')">${c.chapter_num}. ${c.title || '章節 ' + c.chapter_num}</li>`
+  ).join('');
+}
+
+async function loadChapter(idx) {
+  currentChapterIdx = idx;
+  const ch = currentChapters[idx];
+  document.getElementById('reader-title').textContent = ch.title || `第 ${ch.chapter_num} 章`;
+  document.getElementById('reader-ch-label').textContent = `${idx + 1} / ${currentChapters.length}`;
+  document.getElementById('reader-content').innerHTML = '<div class="spinner"></div>';
+  document.getElementById('prev-ch-btn').disabled = idx === 0;
+  document.getElementById('next-ch-btn').disabled = idx === currentChapters.length - 1;
+  renderToc();
+  try {
+    const full = await api(`/chapters/${ch.id}`);
+    document.getElementById('reader-content').innerHTML =
+      full.content.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
+  } catch { document.getElementById('reader-content').textContent = '載入失敗'; }
+  document.getElementById('reader-view').scrollTo(0, 0);
+}
+
+function navigateChapter(dir) {
+  const next = currentChapterIdx + dir;
+  if (next >= 0 && next < currentChapters.length) loadChapter(next);
+}
+
+function closeReader() { document.getElementById('reader-view').classList.remove('open'); }
+
+// ── Forum ────────────────────────────────────────────────────
+function populateForumSelects() {
+  const ns = document.getElementById('forum-novel-select');
+  const val = ns.value;
+  ns.innerHTML = '<option value="">— 選擇作品 —</option>' +
+    novels.map(n => `<option value="${n.id}" ${n.id === val ? 'selected' : ''}>${n.title}</option>`).join('');
+}
+
+async function onForumNovelChange() {
+  const novelId = document.getElementById('forum-novel-select').value;
+  const cs = document.getElementById('forum-chapter-select');
+  cs.innerHTML = '<option value="">— 選擇章節 —</option>';
+  document.getElementById('comment-thread').innerHTML = '';
+  document.getElementById('comment-box').style.display = 'none';
+  if (!novelId) return;
+  try {
+    const chapters = await api(`/chapters/novel/${novelId}`) || [];
+    cs.innerHTML = '<option value="">— 選擇章節 —</option>' +
+      chapters.map(c => `<option value="${c.id}">${c.chapter_num}. ${c.title || '章節 ' + c.chapter_num}</option>`).join('');
+  } catch (e) { toast(e.message); }
+}
+
+function onForumChapterChange() {
+  const chapterId = document.getElementById('forum-chapter-select').value;
+  if (!chapterId) { document.getElementById('comment-thread').innerHTML = ''; document.getElementById('comment-box').style.display = 'none'; return; }
+  currentForumChapterId = chapterId;
+  fetchComments(chapterId);
+}
+
+async function fetchComments(chapterId) {
+  document.getElementById('comment-box').style.display = '';
+  document.getElementById('comment-thread').innerHTML = '<div class="spinner"></div>';
+  try {
+    const comments = await api(`/comments/chapter/${chapterId}`) || [];
+    renderComments(comments);
+  } catch { document.getElementById('comment-thread').innerHTML = '<p style="padding:20px;color:#888">載入失敗</p>'; }
+}
+
+function renderComments(comments) {
+  const tops = comments.filter(c => !c.parent_id);
+  const byParent = {};
+  comments.filter(c => c.parent_id).forEach(c => { (byParent[c.parent_id] = byParent[c.parent_id] || []).push(c); });
+  const html = tops.map(c => {
+    const canDel = c.user_id === currentUser.id || currentUser.role === 'admin';
+    const rs = (byParent[c.id] || []).map(r => {
+      const rd = r.user_id === currentUser.id || currentUser.role === 'admin';
+      return `<div class="comment-item reply">
+        <div class="c-meta"><div class="avatar">${initials(r.profiles?.username)}</div>
+          <span class="c-name">${r.profiles?.username || '匿名'}</span>
+          <span class="c-time">${fmtDate(r.created_at)}</span></div>
+        <div class="c-body">${r.content}</div>
+        <div class="c-actions">${rd ? `<button onclick="deleteComment('${r.id}')">🗑 刪除</button>` : ''}</div>
+      </div>`;
+    }).join('');
+    return `<div class="comment-item">
+      <div class="c-meta"><div class="avatar">${initials(c.profiles?.username)}</div>
+        <span class="c-name">${c.profiles?.username || '匿名'}</span>
+        <span class="c-time">${fmtDate(c.created_at)}</span></div>
+      <div class="c-body">${c.content}</div>
+      <div class="c-actions">
+        <button onclick="startReply('${c.id}','${c.profiles?.username || ''}')">↩ 回覆</button>
+        ${canDel ? `<button onclick="deleteComment('${c.id}')">🗑 刪除</button>` : ''}
+      </div>${rs}
+    </div>`;
+  }).join('');
+  document.getElementById('comment-thread').innerHTML = html || '<p style="padding:20px;color:#888">尚無留言，來第一個留言吧！</p>';
+}
+
+function startReply(parentId, username) {
+  replyToId = parentId;
+  const ind = document.getElementById('reply-indicator');
+  ind.style.display = ''; ind.textContent = `↩ 回覆 @${username}`;
+  document.getElementById('comment-input').focus();
+}
+
+function cancelReply() {
+  replyToId = null;
+  document.getElementById('reply-indicator').style.display = 'none';
+}
+
+async function postComment() {
+  const content = document.getElementById('comment-input').value.trim();
+  if (!content || !currentForumChapterId) return;
+  try {
+    await api('/comments/', { method: 'POST', body: JSON.stringify({ chapter_id: currentForumChapterId, content, parent_id: replyToId || null }) });
+    document.getElementById('comment-input').value = '';
+    cancelReply();
+    fetchComments(currentForumChapterId);
+  } catch (e) { toast(e.message); }
+}
+
+async function deleteComment(id) {
+  if (!confirm('確定刪除此留言？')) return;
+  try { await api(`/comments/${id}`, { method: 'DELETE' }); fetchComments(currentForumChapterId); }
+  catch (e) { toast(e.message); }
+}
+
+// ── Protect ──────────────────────────────────────────────────
+function selectPreset(btn) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  protectPreset = btn.dataset.preset;
+}
+
+function handleProtectDrop(e) {
+  e.preventDefault();
+  document.getElementById('protect-drop').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) processProtect(f);
+}
+
+function handleProtectFile(e) { if (e.target.files[0]) processProtect(e.target.files[0]); }
+
+async function processProtect(file) {
+  const bar = document.getElementById('protect-progress');
+  const fill = document.getElementById('protect-fill');
+  bar.style.display = ''; fill.style.width = '30%';
+  const fd = new FormData();
+  fd.append('image', file);
+  fd.append('preset', protectPreset);
+  try {
+    fill.style.width = '60%';
+    const res = await fetch(API + '/protect/image', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+    if (!res.ok) throw new Error('處理失敗');
+    fill.style.width = '100%';
+    const url = URL.createObjectURL(await res.blob());
+    document.getElementById('protect-result-img').src = url;
+    document.getElementById('protect-dl').href = url;
+    document.getElementById('protect-preview').style.display = '';
+  } catch (e) { toast('⚠️ ' + e.message); }
+  finally { setTimeout(() => { bar.style.display = 'none'; fill.style.width = '0'; }, 800); }
+}
+
+// ── Settings ─────────────────────────────────────────────────
+function renderSettings() {
+  document.getElementById('settings-avatar').textContent = currentUser.username ? currentUser.username[0].toUpperCase() : '🧙';
+  document.getElementById('settings-username').textContent = currentUser.username || '巫師';
+  document.getElementById('settings-email').textContent = '';
+  document.getElementById('settings-role').textContent = currentUser.role === 'admin' ? '🏰 管理員' : '📚 讀者';
+}
+
+function applyFontSize(size) {
+  document.getElementById('reader-content').style.fontSize = size + 'px';
+  localStorage.setItem('pd_font', size);
+}
+
+function toggleDark(on) {
+  document.documentElement.style.setProperty('--parchment',  on ? '#1e1508' : '#f4e8c1');
+  document.documentElement.style.setProperty('--parchment2', on ? '#16100a' : '#efe2c4');
+  document.documentElement.style.setProperty('--ink',        on ? '#f4e8c1' : '#1a0a00');
+  document.documentElement.style.setProperty('--ink-light',  on ? '#e8d5a3' : '#3d1f0d');
+  localStorage.setItem('pd_dark', on ? '1' : '0');
+}
+
+// ── Admin ────────────────────────────────────────────────────
+function switchAdminTab(tab) {
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.admin-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('admin-' + tab).classList.add('active');
+  if (tab === 'novels') loadAdminNovelList();
+  if (tab === 'users') loadAdminUsers();
+  if (tab === 'upload') loadAdminNovelsForUpload();
+}
+
+async function loadAdminNovelsForUpload() {
+  const sel = document.getElementById('upload-novel-select');
+  try {
+    const ns = await api('/novels/') || [];
+    sel.innerHTML = '<option value="">— 選擇作品 —</option>' + ns.map(n => `<option value="${n.id}">${n.title}</option>`).join('');
+  } catch {}
+}
+
+async function handleChapterUpload(e) {
+  const files = Array.from(e.target.files);
+  const novelId = document.getElementById('upload-novel-select').value;
+  const baseNum = parseInt(document.getElementById('upload-chapter-num').value) || 1;
+  const title = document.getElementById('upload-chapter-title').value.trim();
+  if (!novelId) { toast('請先選擇作品'); return; }
+  const queue = document.getElementById('upload-queue');
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const uid = 'uq' + Date.now() + i;
+    queue.insertAdjacentHTML('beforeend', `<div class="upload-item" id="${uid}"><span class="status">⏳</span><span>${f.name}</span></div>`);
+    const fd = new FormData();
+    fd.append('image', f);
+    fd.append('chapter_num', baseNum + i);
+    if (title) fd.append('title', title);
+    try {
+      const res = await fetch(`${API}/chapters/novel/${novelId}/upload`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+      document.getElementById(uid).querySelector('.status').textContent = '✅';
+    } catch (err) {
+      const item = document.getElementById(uid);
+      item.querySelector('.status').textContent = '❌';
+      item.insertAdjacentHTML('beforeend', `<small style="color:red"> ${err.message}</small>`);
+    }
+  }
+  e.target.value = '';
+}
+
+function showCreateNovelForm() { document.getElementById('admin-novel-form').style.display = ''; }
+
+async function createNovel() {
+  const title = document.getElementById('new-novel-title').value.trim();
+  if (!title) { toast('請輸入作品名稱'); return; }
+  try {
+    await api('/novels/', { method: 'POST', body: JSON.stringify({ title, author: document.getElementById('new-novel-author').value.trim() || null, description: document.getElementById('new-novel-desc').value.trim() || null }) });
+    toast('✅ 作品已建立');
+    document.getElementById('admin-novel-form').style.display = 'none';
+    loadAdminNovelList(); loadNovels();
+  } catch (e) { toast(e.message); }
+}
+
+async function loadAdminNovelList() {
+  const el = document.getElementById('admin-novel-list');
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const ns = await api('/novels/') || [];
+    el.innerHTML = ns.map(n => `
+      <div style="padding:10px 0;border-bottom:1px solid rgba(26,10,0,.08)">
+        <div style="font-size:14px;font-weight:bold">${n.title}</div>
+        <div style="font-size:12px;color:var(--ink-light)">${n.author || '佚名'}</div>
+        <div style="margin-top:6px">
+          <button onclick="deleteNovel('${n.id}')" style="font-size:11px;padding:3px 10px;background:none;border:1px solid var(--scarlet);color:var(--scarlet);border-radius:3px;cursor:pointer">刪除</button>
+        </div>
+      </div>`).join('') || '<p style="color:#888">尚無作品</p>';
+  } catch { el.innerHTML = '<p>載入失敗</p>'; }
+}
+
+async function deleteNovel(id) {
+  if (!confirm('確定刪除此作品及所有章節？此操作無法復原！')) return;
+  try { await api(`/novels/${id}`, { method: 'DELETE' }); toast('已刪除'); loadAdminNovelList(); loadNovels(); }
+  catch (e) { toast(e.message); }
+}
+
+async function loadAdminUsers() {
+  const el = document.getElementById('user-list');
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const users = await api('/permissions/users') || [];
+    el.innerHTML = users.map(u => `
+      <div class="user-row">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--scarlet);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:14px;flex-shrink:0">${initials(u.username)}</div>
+        <div class="u-name">${u.username}</div>
+        <div class="u-role">${u.role}</div>
+        <button class="perm-btn" onclick="openPerm('${u.id}','${u.username}')">授權</button>
+      </div>`).join('') || '<p style="color:#888;padding:20px">尚無用戶</p>';
+  } catch { el.innerHTML = '<p>載入失敗</p>'; }
+}
+
+async function openPerm(userId, username) {
+  document.getElementById('perm-user-name').textContent = username;
+  document.getElementById('perm-modal').classList.add('open');
+  const el = document.getElementById('perm-novel-list');
+  el.innerHTML = '<div class="spinner"></div>';
+  try {
+    const [allNovels, userPerms] = await Promise.all([
+      api('/novels/'),
+      api(`/permissions/novel/${userId}`).catch(() => []),
+    ]);
+    const grantedIds = new Set((userPerms || []).map(p => p.novel_id));
+    el.innerHTML = (allNovels || []).map(n => `
+      <div class="perm-novel-row">
+        <label>${n.title}</label>
+        <label class="toggle">
+          <input type="checkbox" ${grantedIds.has(n.id) ? 'checked' : ''} onchange="togglePerm('${userId}','${n.id}',this.checked)" />
+          <span class="slider"></span>
+        </label>
+      </div>`).join('') || '<p>尚無作品</p>';
+  } catch { el.innerHTML = '<p>載入失敗</p>'; }
+}
+
+async function togglePerm(userId, novelId, grant) {
+  try {
+    if (grant) await api('/permissions/grant', { method: 'POST', body: JSON.stringify({ user_id: userId, novel_id: novelId }) });
+    else await api('/permissions/revoke', { method: 'DELETE', body: JSON.stringify({ user_id: userId, novel_id: novelId }) });
+    toast(grant ? '✅ 已授權' : '已撤銷');
+  } catch (e) { toast(e.message); }
+}
+
+function closePerm() { document.getElementById('perm-modal').classList.remove('open'); }
+
+// ── Boot ─────────────────────────────────────────────────────
+(async () => {
+  const fs = localStorage.getItem('pd_font');
+  if (fs) { document.getElementById('font-size-select').value = fs; }
+  if (localStorage.getItem('pd_dark') === '1') { document.getElementById('dark-toggle').checked = true; toggleDark(true); }
+  if (token) await initApp();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+})();
+</script>
 </body>
 </html>
